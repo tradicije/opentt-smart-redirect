@@ -2,8 +2,9 @@
 /*
 Plugin Name: OpenTT Smart Redirect
 Description: A simple way to enable redirect mode and send all users (except admins) to a selected page.
-Version: 1.3
+Version: 1.4
 Author: Aleksa Dimitrijević
+Author URI: https://instagram.com/tradicije
 */
 
 if ( !defined( 'ABSPATH' ) ) exit;
@@ -11,6 +12,31 @@ if ( !defined( 'ABSPATH' ) ) exit;
 define('OPENTT_SMART_REDIRECT_MODE_OPTION', 'opentt_smart_redirect_mode');
 define('OPENTT_SMART_REDIRECT_PAGE_OPTION', 'opentt_smart_redirect_page_id');
 define('OPENTT_SMART_REDIRECT_SUBPAGES_OPTION', 'opentt_smart_redirect_allow_subpages');
+define('OPENTT_SMART_REDIRECT_ALLOWED_ROLES_OPTION', 'opentt_smart_redirect_allowed_roles');
+
+function opentt_smart_redirect_get_roles() {
+    $wp_roles = wp_roles();
+    return ($wp_roles && is_array($wp_roles->roles)) ? $wp_roles->roles : [];
+}
+
+function opentt_smart_redirect_get_allowed_roles() {
+    $roles = opentt_smart_redirect_get_roles();
+    $valid_role_keys = array_keys($roles);
+
+    $saved_roles = get_option(OPENTT_SMART_REDIRECT_ALLOWED_ROLES_OPTION, []);
+    if (!is_array($saved_roles)) {
+        $saved_roles = [];
+    }
+
+    $saved_roles = array_map('sanitize_key', $saved_roles);
+    $allowed_roles = array_values(array_intersect($saved_roles, $valid_role_keys));
+
+    if (in_array('administrator', $valid_role_keys, true) && !in_array('administrator', $allowed_roles, true)) {
+        $allowed_roles[] = 'administrator';
+    }
+
+    return $allowed_roles;
+}
 
 // Add admin menu
 add_action('admin_menu', function() {
@@ -47,6 +73,10 @@ register_activation_hook(__FILE__, function() {
     if (get_option(OPENTT_SMART_REDIRECT_SUBPAGES_OPTION, null) === null) {
         add_option(OPENTT_SMART_REDIRECT_SUBPAGES_OPTION, 0);
     }
+
+    if (get_option(OPENTT_SMART_REDIRECT_ALLOWED_ROLES_OPTION, null) === null) {
+        add_option(OPENTT_SMART_REDIRECT_ALLOWED_ROLES_OPTION, ['administrator']);
+    }
 });
 
 // Render admin page
@@ -59,13 +89,26 @@ function opentt_smart_redirect_settings_page() {
     if (isset($_POST['opentt_smart_save_page']) && check_admin_referer('opentt_smart_save_page_action')) {
         $page_id = isset($_POST['opentt_smart_redirect_page_id']) ? absint($_POST['opentt_smart_redirect_page_id']) : 0;
         $allow_subpages = isset($_POST['opentt_smart_allow_subpages']) ? 1 : 0;
+        $submitted_roles = isset($_POST['opentt_smart_allowed_roles']) && is_array($_POST['opentt_smart_allowed_roles'])
+            ? array_map('sanitize_key', wp_unslash($_POST['opentt_smart_allowed_roles']))
+            : [];
+        $role_keys = array_keys(opentt_smart_redirect_get_roles());
+        $allowed_roles = array_values(array_intersect($submitted_roles, $role_keys));
+
+        if (in_array('administrator', $role_keys, true) && !in_array('administrator', $allowed_roles, true)) {
+            $allowed_roles[] = 'administrator';
+        }
+
         update_option(OPENTT_SMART_REDIRECT_PAGE_OPTION, $page_id);
         update_option(OPENTT_SMART_REDIRECT_SUBPAGES_OPTION, $allow_subpages);
+        update_option(OPENTT_SMART_REDIRECT_ALLOWED_ROLES_OPTION, $allowed_roles);
     }
 
     $is_enabled       = (int) get_option(OPENTT_SMART_REDIRECT_MODE_OPTION, 0);
     $selected_page_id = (int) get_option(OPENTT_SMART_REDIRECT_PAGE_OPTION, 0);
     $allow_subpages   = (int) get_option(OPENTT_SMART_REDIRECT_SUBPAGES_OPTION, 0);
+    $roles            = opentt_smart_redirect_get_roles();
+    $allowed_roles    = opentt_smart_redirect_get_allowed_roles();
     $pages            = get_pages([
         'sort_column' => 'post_title',
         'sort_order'  => 'asc',
@@ -98,15 +141,46 @@ function opentt_smart_redirect_settings_page() {
                     Allow subpages of the selected parent page
                 </label>
             </p>
+            <h3 style="margin-top: 18px;">Roles That Can Access Full Site</h3>
+            <p style="margin-top: 0;">Checked roles can browse the full site while redirect mode is enabled.</p>
+            <div style="display: grid; gap: 8px; margin: 10px 0 14px;">
+                <?php foreach ($roles as $role_key => $role_data): ?>
+                    <?php
+                    $is_admin_role = ('administrator' === $role_key);
+                    $is_checked = $is_admin_role || in_array($role_key, $allowed_roles, true);
+                    ?>
+                    <label style="display: inline-flex; align-items: center; gap: 8px;">
+                        <input
+                            type="checkbox"
+                            name="opentt_smart_allowed_roles[]"
+                            value="<?php echo esc_attr($role_key); ?>"
+                            <?php checked($is_checked); ?>
+                            <?php disabled($is_admin_role); ?>
+                        >
+                        <span><?php echo esc_html(isset($role_data['name']) ? $role_data['name'] : $role_key); ?></span>
+                        <?php if ($is_admin_role): ?>
+                            <em style="color:#666;">(always enabled)</em>
+                        <?php endif; ?>
+                    </label>
+                <?php endforeach; ?>
+            </div>
             <input type="submit" name="opentt_smart_save_page" class="button button-secondary" value="Save Settings">
         </form>
     </div>
     <?php
 }
 
-// Redirect all users except admins
+// Redirect all users except those with allowed roles
 add_action('template_redirect', function() {
-    if (is_user_logged_in() && current_user_can('manage_options')) return;
+    if (is_user_logged_in()) {
+        $current_user = wp_get_current_user();
+        $user_roles = ($current_user && is_array($current_user->roles)) ? $current_user->roles : [];
+        $allowed_roles = opentt_smart_redirect_get_allowed_roles();
+
+        if (!empty(array_intersect($user_roles, $allowed_roles))) {
+            return;
+        }
+    }
 
     if (get_option(OPENTT_SMART_REDIRECT_MODE_OPTION)) {
         $redirect_page_id = (int) get_option(OPENTT_SMART_REDIRECT_PAGE_OPTION, 0);
