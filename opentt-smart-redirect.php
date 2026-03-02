@@ -2,7 +2,7 @@
 /*
 Plugin Name: OpenTT Smart Redirect
 Description: A simple way to enable redirect mode and send all users (except admins) to a selected page.
-Version: 1.4
+Version: 1.4.1
 Author: Aleksa Dimitrijević
 Author URI: https://instagram.com/tradicije
 */
@@ -47,6 +47,19 @@ add_action('admin_menu', function() {
         'opentt-smart-redirect',
         'opentt_smart_redirect_settings_page',
         'dashicons-admin-generic'
+    );
+});
+
+add_action('admin_enqueue_scripts', function($hook) {
+    if ('toplevel_page_opentt-smart-redirect' !== $hook) {
+        return;
+    }
+
+    wp_enqueue_style(
+        'opentt-smart-redirect-admin',
+        plugin_dir_url(__FILE__) . 'main.css',
+        [],
+        '1.0.0'
     );
 });
 
@@ -114,58 +127,65 @@ function opentt_smart_redirect_settings_page() {
         'sort_order'  => 'asc',
     ]);
     ?>
-    <div class="wrap">
-        <h1>OpenTT Smart Redirect</h1>
-        <p>Status: <strong><?php echo $is_enabled ? 'ENABLED' : 'DISABLED'; ?></strong></p>
-        <form method="post">
-            <?php wp_nonce_field('opentt_smart_toggle_action'); ?>
-            <input type="submit" name="opentt_smart_toggle" class="button button-primary" value="<?php echo $is_enabled ? 'Disable' : 'Enable'; ?> Redirect Mode">
-        </form>
-
-        <hr>
-
-        <h2>Target Redirect Page</h2>
-        <form method="post">
-            <?php wp_nonce_field('opentt_smart_save_page_action'); ?>
-            <select name="opentt_smart_redirect_page_id" style="min-width: 280px;">
-                <option value="0">-- Select Page --</option>
-                <?php foreach ($pages as $page): ?>
-                    <option value="<?php echo (int) $page->ID; ?>" <?php selected($selected_page_id, (int) $page->ID); ?>>
-                        <?php echo esc_html($page->post_title); ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-            <p style="margin: 12px 0;">
-                <label style="display: inline-flex; align-items: center; gap: 8px;">
-                    <input type="checkbox" name="opentt_smart_allow_subpages" value="1" <?php checked($allow_subpages, 1); ?>>
-                    Allow subpages of the selected parent page
-                </label>
+    <div class="wrap opentt-smart-redirect-admin">
+        <div class="opentt-header-card">
+            <h1>OpenTT Smart Redirect</h1>
+            <p class="opentt-status">
+                Status:
+                <strong class="<?php echo $is_enabled ? 'is-enabled' : 'is-disabled'; ?>">
+                    <?php echo $is_enabled ? 'ENABLED' : 'DISABLED'; ?>
+                </strong>
             </p>
-            <h3 style="margin-top: 18px;">Roles That Can Access Full Site</h3>
-            <p style="margin-top: 0;">Checked roles can browse the full site while redirect mode is enabled.</p>
-            <div style="display: grid; gap: 8px; margin: 10px 0 14px;">
-                <?php foreach ($roles as $role_key => $role_data): ?>
-                    <?php
-                    $is_admin_role = ('administrator' === $role_key);
-                    $is_checked = $is_admin_role || in_array($role_key, $allowed_roles, true);
-                    ?>
-                    <label style="display: inline-flex; align-items: center; gap: 8px;">
-                        <input
-                            type="checkbox"
-                            name="opentt_smart_allowed_roles[]"
-                            value="<?php echo esc_attr($role_key); ?>"
-                            <?php checked($is_checked); ?>
-                            <?php disabled($is_admin_role); ?>
-                        >
-                        <span><?php echo esc_html(isset($role_data['name']) ? $role_data['name'] : $role_key); ?></span>
-                        <?php if ($is_admin_role): ?>
-                            <em style="color:#666;">(always enabled)</em>
-                        <?php endif; ?>
-                    </label>
-                <?php endforeach; ?>
-            </div>
-            <input type="submit" name="opentt_smart_save_page" class="button button-secondary" value="Save Settings">
-        </form>
+            <form method="post" class="opentt-toggle-form">
+                <?php wp_nonce_field('opentt_smart_toggle_action'); ?>
+                <input type="submit" name="opentt_smart_toggle" class="button button-primary" value="<?php echo $is_enabled ? 'Disable' : 'Enable'; ?> Redirect Mode">
+            </form>
+        </div>
+
+        <div class="opentt-settings-card">
+            <h2>Target Redirect Page</h2>
+            <form method="post" class="opentt-settings-form">
+                <?php wp_nonce_field('opentt_smart_save_page_action'); ?>
+                <label class="opentt-field-label" for="opentt_smart_redirect_page_id">Page</label>
+                <select id="opentt_smart_redirect_page_id" name="opentt_smart_redirect_page_id">
+                    <option value="0">-- Select Page --</option>
+                    <?php foreach ($pages as $page): ?>
+                        <option value="<?php echo (int) $page->ID; ?>" <?php selected($selected_page_id, (int) $page->ID); ?>>
+                            <?php echo esc_html($page->post_title); ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+                <label class="opentt-inline-checkbox">
+                    <input type="checkbox" name="opentt_smart_allow_subpages" value="1" <?php checked($allow_subpages, 1); ?>>
+                    <span>Allow subpages of the selected parent page</span>
+                </label>
+
+                <h3>Roles That Can Access Full Site</h3>
+                <p class="description">Checked roles can browse the full site while redirect mode is enabled.</p>
+                <div class="opentt-roles-grid">
+                    <?php foreach ($roles as $role_key => $role_data): ?>
+                        <?php
+                        $is_admin_role = ('administrator' === $role_key);
+                        $is_checked = $is_admin_role || in_array($role_key, $allowed_roles, true);
+                        ?>
+                        <label class="opentt-role-item <?php echo $is_admin_role ? 'is-admin-role' : ''; ?>">
+                            <input
+                                type="checkbox"
+                                name="opentt_smart_allowed_roles[]"
+                                value="<?php echo esc_attr($role_key); ?>"
+                                <?php checked($is_checked); ?>
+                                <?php disabled($is_admin_role); ?>
+                            >
+                            <span class="opentt-role-name"><?php echo esc_html(isset($role_data['name']) ? $role_data['name'] : $role_key); ?></span>
+                            <?php if ($is_admin_role): ?>
+                                <em class="opentt-role-note">(always enabled)</em>
+                            <?php endif; ?>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+                <input type="submit" name="opentt_smart_save_page" class="button button-secondary" value="Save Settings">
+            </form>
+        </div>
     </div>
     <?php
 }

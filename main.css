@@ -1,0 +1,152 @@
+.opentt-smart-redirect-admin {
+    --opentt-bg: #f3f6fb;
+    --opentt-surface: #ffffff;
+    --opentt-border: #d7e0ec;
+    --opentt-text: #1d2735;
+    --opentt-muted: #5c6b7c;
+    --opentt-primary: #0f6bff;
+    --opentt-primary-dark: #0a52c9;
+    --opentt-success: #0a9b5d;
+    --opentt-danger: #cc3c3c;
+    max-width: 920px;
+    margin-top: 20px;
+    color: var(--opentt-text);
+}
+
+.opentt-smart-redirect-admin h1,
+.opentt-smart-redirect-admin h2,
+.opentt-smart-redirect-admin h3 {
+    color: #122033;
+    letter-spacing: 0.2px;
+}
+
+.opentt-header-card,
+.opentt-settings-card {
+    background: linear-gradient(180deg, #ffffff 0%, #fcfdff 100%);
+    border: 1px solid var(--opentt-border);
+    border-radius: 14px;
+    box-shadow: 0 8px 26px rgba(18, 45, 88, 0.08);
+    padding: 22px;
+}
+
+.opentt-settings-card {
+    margin-top: 16px;
+}
+
+.opentt-status {
+    margin: 8px 0 16px;
+    font-size: 14px;
+    color: var(--opentt-muted);
+}
+
+.opentt-status strong {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    letter-spacing: 0.4px;
+}
+
+.opentt-status .is-enabled {
+    background: #e8f9f0;
+    color: var(--opentt-success);
+}
+
+.opentt-status .is-disabled {
+    background: #fdeeee;
+    color: var(--opentt-danger);
+}
+
+.opentt-smart-redirect-admin .button.button-primary {
+    background: linear-gradient(135deg, var(--opentt-primary) 0%, #2f82ff 100%);
+    border-color: var(--opentt-primary);
+    box-shadow: 0 6px 14px rgba(15, 107, 255, 0.25);
+    padding: 5px 14px;
+}
+
+.opentt-smart-redirect-admin .button.button-primary:hover,
+.opentt-smart-redirect-admin .button.button-primary:focus {
+    background: linear-gradient(135deg, var(--opentt-primary-dark) 0%, #226fe0 100%);
+    border-color: var(--opentt-primary-dark);
+}
+
+.opentt-settings-form {
+    display: grid;
+    gap: 12px;
+}
+
+.opentt-field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--opentt-muted);
+}
+
+#opentt_smart_redirect_page_id {
+    max-width: 360px;
+    width: 100%;
+    border-radius: 8px;
+    border-color: #c7d4e5;
+}
+
+.opentt-inline-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    margin-top: 2px;
+}
+
+.opentt-settings-form .description {
+    margin: -2px 0 0;
+    color: var(--opentt-muted);
+}
+
+.opentt-roles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    gap: 10px;
+    margin: 2px 0 8px;
+}
+
+.opentt-role-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--opentt-bg);
+    border: 1px solid #d9e5f5;
+    border-radius: 10px;
+    transition: border-color 0.18s ease, transform 0.18s ease;
+}
+
+.opentt-role-item:hover {
+    border-color: #9fc0ef;
+    transform: translateY(-1px);
+}
+
+.opentt-role-name {
+    font-weight: 500;
+}
+
+.opentt-role-note {
+    margin-left: auto;
+    color: var(--opentt-muted);
+    font-size: 12px;
+}
+
+.opentt-role-item.is-admin-role {
+    border-color: #a7c5ee;
+    background: #edf4ff;
+}
+
+@media (max-width: 782px) {
+    .opentt-header-card,
+    .opentt-settings-card {
+        padding: 16px;
+        border-radius: 12px;
+    }
+
+    .opentt-roles-grid {
+        grid-template-columns: 1fr;
+    }
+}

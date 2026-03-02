@@ -66,6 +66,9 @@ This ensures that improvements and hosted modifications remain free and accessib
 
 ## Changelog
 
+### v1.4.1
+- Inline CSS moved to a dedicated CSS file
+
 ### v1.4
 - Added role-based bypass control for redirect mode
 - Administrators are always allowed to access the site
